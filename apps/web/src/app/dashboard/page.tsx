@@ -81,7 +81,7 @@ export default function Dashboard() {
       </div>
 
       {/* Mobile Header */}
-      <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
+      <DashboardHeader onMenuClick={() => setSidebarOpen(true)} location={user?.lastLoginLocation} />
 
       <div className="relative z-10 flex">
         {/* Sidebar */}
@@ -89,8 +89,9 @@ export default function Dashboard() {
           isMobile={true}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          location={user?.lastLoginLocation}
         />
-        <Sidebar isMobile={false} />
+        <Sidebar isMobile={false} location={user?.lastLoginLocation} />
 
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">

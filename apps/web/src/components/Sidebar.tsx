@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { clearToken } from "../lib/api";
+import { clearToken, type LoginLocation } from "../lib/api";
 
 const menuItems = [
   { icon: BarChart3, label: "Dashboard", href: "/dashboard" },
@@ -36,14 +36,26 @@ interface SidebarProps {
   isMobile?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
+  location?: LoginLocation | null;
 }
 
-export function Sidebar({ isMobile = false, isOpen = true, onClose }: SidebarProps) {
+export function Sidebar({ isMobile = false, isOpen = true, onClose, location }: SidebarProps) {
   const router = useRouter();
 
   function handleLogout() {
     clearToken();
     router.push("/");
+  }
+
+  function getLocationDisplay() {
+    if (!location) return "Unknown location";
+    
+    const parts = [];
+    if (location.locality) parts.push(location.locality);
+    if (location.city) parts.push(location.city);
+    if (location.state) parts.push(location.state);
+    
+    return parts.length > 0 ? parts.join(", ") : "Unknown location";
   }
 
   const sidebarContent = (
@@ -68,6 +80,13 @@ export function Sidebar({ isMobile = false, isOpen = true, onClose }: SidebarPro
         ))}
 
         <div className="my-6 border-t border-white/10" />
+
+        <div className="px-4 py-3 rounded-lg bg-white/10 border border-white/20">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">📍 Your Location</p>
+          <p className="text-sm font-medium text-slate-700">{getLocationDisplay()}</p>
+        </div>
+
+        <div className="my-4" />
 
         <div className="px-4 py-2">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Coming Soon</p>
@@ -127,7 +146,18 @@ export function Sidebar({ isMobile = false, isOpen = true, onClose }: SidebarPro
   );
 }
 
-export function DashboardHeader({ onMenuClick }: { onMenuClick: () => void }) {
+export function DashboardHeader({ onMenuClick, location }: { onMenuClick: () => void; location?: LoginLocation | null }) {
+  function getLocationDisplay() {
+    if (!location) return "Unknown location";
+    
+    const parts = [];
+    if (location.locality) parts.push(location.locality);
+    if (location.city) parts.push(location.city);
+    if (location.state) parts.push(location.state);
+    
+    return parts.length > 0 ? parts.join(", ") : "Unknown location";
+  }
+
   return (
     <div className="lg:hidden flex items-center justify-between px-5 py-4 bg-white border-b border-slate-200">
       <button
@@ -136,14 +166,11 @@ export function DashboardHeader({ onMenuClick }: { onMenuClick: () => void }) {
       >
         <Menu size={24} />
       </button>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col items-center gap-1">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white">
           <QrCode size={22} />
         </div>
-        <div>
-          <p className="text-xs text-slate-500">Business Dashboard</p>
-          <h1 className="text-lg font-bold text-slate-950">ReviewQR AI</h1>
-        </div>
+        <p className="text-xs text-slate-500">📍 {getLocationDisplay()}</p>
       </div>
     </div>
   );
