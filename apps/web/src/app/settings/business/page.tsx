@@ -6,14 +6,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { GlassCard } from "../../../../components/GlassCard";
-import { Sidebar, DashboardHeader } from "../../../../components/Sidebar";
-import { Button } from "../../../../components/Button";
-import { apiFetch, Business, getToken } from "../../../../lib/api";
+import { GlassCard } from "../../../components/GlassCard";
+import { Sidebar, DashboardHeader } from "../../../components/Sidebar";
+import { Button } from "../../../components/Button";
+import { apiFetch, Business, getToken } from "../../../lib/api";
 
 export default function BusinessSettings() {
   const router = useRouter();
-  const [business, setBusiness] = useState<Business | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -40,7 +39,6 @@ export default function BusinessSettings() {
   async function load() {
     const profile = await apiFetch<{ business: Business | null }>("/api/business/me");
     if (profile.business) {
-      setBusiness(profile.business);
       setForm({
         businessName: profile.business.businessName,
         category: profile.business.category,
@@ -87,11 +85,10 @@ export default function BusinessSettings() {
     setMessage(null);
 
     try {
-      const response = await apiFetch<{ business: Business }>("/api/business/profile", {
+      await apiFetch<{ business: Business }>("/api/business/profile", {
         method: "POST",
         body: JSON.stringify(form)
       });
-      setBusiness(response.business);
       setMessage({ type: "success", text: "Business profile saved successfully!" });
       await load();
     } catch (err) {

@@ -11,12 +11,10 @@ import {
   MessageCircle,
   Zap,
   Lightbulb,
-  Menu,
-  X
+  Menu
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { clearToken } from "../lib/api";
 
 const menuItems = [

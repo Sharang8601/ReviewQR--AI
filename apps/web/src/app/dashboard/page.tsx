@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { BarChart3, Copy, Download, ExternalLink, QrCode, Star } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
