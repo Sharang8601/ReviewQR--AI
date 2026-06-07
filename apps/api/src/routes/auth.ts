@@ -132,11 +132,36 @@ router.patch(
       return res.status(400).json({ message: "Location is required" });
     }
 
+    // Try to reverse geocode the location
+    let geocoded: { city?: string; locality?: string; state?: string } = {};
+    try {
+      const geoResponse = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.latitude}&lon=${location.longitude}`,
+        {
+          headers: { "Accept": "application/json" }
+        }
+      );
+
+      if (geoResponse.ok) {
+        const geoData = await geoResponse.json();
+        const address = geoData.address || {};
+        geocoded = {
+          city: address.city || address.town || address.village || address.county,
+          locality: address.suburb || address.neighbourhood,
+          state: address.state || address.province
+        };
+      }
+    } catch (error) {
+      // Silently fail geocoding, location coordinates will still be stored
+      console.error("Geocoding error:", error);
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user?.id,
       {
         lastLoginLocation: {
           ...location,
+          ...geocoded,
           capturedAt: new Date()
         }
       },

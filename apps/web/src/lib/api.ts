@@ -22,6 +22,10 @@ export type LoginLocation = {
   latitude: number;
   longitude: number;
   accuracy?: number;
+  capturedAt?: string;
+  city?: string;
+  locality?: string;
+  state?: string;
 };
 
 export type CurrentUser = {
@@ -29,9 +33,7 @@ export type CurrentUser = {
   email: string;
   name?: string;
   picture?: string;
-  lastLoginLocation?: LoginLocation & {
-    capturedAt?: string;
-  };
+  lastLoginLocation?: LoginLocation;
 };
 
 export function getToken() {
