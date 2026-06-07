@@ -11,7 +11,10 @@ const userSchema = new Schema(
       latitude: { type: Number },
       longitude: { type: Number },
       accuracy: { type: Number },
-      capturedAt: { type: Date }
+      capturedAt: { type: Date },
+      city: { type: String, default: "" },
+      locality: { type: String, default: "" },
+      state: { type: String, default: "" }
     }
   },
   { timestamps: true }
