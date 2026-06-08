@@ -8,7 +8,8 @@ import { useEffect, useMemo, useState } from "react";
 import { GlassCard } from "../../components/GlassCard";
 import { Sidebar, DashboardHeader } from "../../components/Sidebar";
 import { Button } from "../../components/Button";
-import { apiFetch, Business, CurrentUser, getToken } from "../../lib/api";
+import { apiFetch, Business, CurrentUser, getToken, syncUserLocation } from "../../lib/api";
+import { formatLocation } from "../../lib/geocode";
 
 type Analytics = {
   metrics: {
@@ -29,6 +30,7 @@ export default function Dashboard() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<"loading" | "ready">("loading");
 
   const reviewUrl = useMemo(() => (business ? `${window.location.origin}/review/${business._id}` : ""), [business]);
 
@@ -39,7 +41,17 @@ export default function Dashboard() {
     }
 
     load();
+    refreshLocation();
   }, [router]);
+
+  async function refreshLocation() {
+    setLocationStatus("loading");
+    const location = await syncUserLocation();
+    if (location) {
+      setUser((current) => (current ? { ...current, lastLoginLocation: location } : current));
+    }
+    setLocationStatus("ready");
+  }
 
   async function load() {
     const profile = await apiFetch<{ business: Business | null; user: CurrentUser | null }>("/api/business/me");
@@ -59,15 +71,21 @@ export default function Dashboard() {
   }
 
   function getLocationDisplay() {
+    if (locationStatus === "loading" && !user?.lastLoginLocation) {
+      return "Detecting location...";
+    }
+
     const location = user?.lastLoginLocation;
-    if (!location) return "Unknown location";
-    
-    const parts = [];
-    if (location.locality) parts.push(location.locality);
-    if (location.city) parts.push(location.city);
-    if (location.state) parts.push(location.state);
-    
-    return parts.length > 0 ? parts.join(", ") : "Unknown location";
+    if (!location) return "Location unavailable";
+
+    const formatted = formatLocation(location);
+    if (formatted) return formatted;
+
+    if (location.latitude && location.longitude) {
+      return `${location.latitude.toFixed(2)}, ${location.longitude.toFixed(2)}`;
+    }
+
+    return "Location unavailable";
   }
 
   const metrics = analytics?.metrics;

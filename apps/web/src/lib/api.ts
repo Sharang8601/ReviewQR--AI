@@ -55,9 +55,24 @@ export async function getBrowserLocation() {
           accuracy: position.coords.accuracy
         }),
       () => resolve(null),
-      { enableHighAccuracy: false, maximumAge: 300000, timeout: 6000 }
+      { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 }
     );
   });
+}
+
+export async function syncUserLocation() {
+  const coords = await getBrowserLocation();
+  if (!coords) return null;
+
+  try {
+    const result = await apiFetch<{ location: LoginLocation }>("/api/auth/location", {
+      method: "PATCH",
+      body: JSON.stringify(coords)
+    });
+    return result.location;
+  } catch {
+    return null;
+  }
 }
 
 export function setToken(token: string) {

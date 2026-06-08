@@ -14,7 +14,8 @@ export async function reverseGeocode(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
       {
         headers: {
-          "Accept": "application/json"
+          Accept: "application/json",
+          "User-Agent": "BoostTheReviews/1.0 (reviewqr-ai)"
         }
       }
     );
@@ -27,9 +28,9 @@ export async function reverseGeocode(
     const address = data.address || {};
 
     return {
-      city: address.city || address.town || address.village || address.county,
-      locality: address.suburb || address.neighbourhood,
-      state: address.state || address.province
+      city: address.city || address.town || address.village || address.county || address.state_district,
+      locality: address.suburb || address.neighbourhood || address.quarter,
+      state: address.state || address.province || address.region
     };
   } catch (error) {
     console.error("Geocoding error:", error);

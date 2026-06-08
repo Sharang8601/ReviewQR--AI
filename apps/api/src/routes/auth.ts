@@ -6,6 +6,7 @@ import { z } from "zod";
 import { env } from "../config/env.js";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
 import { User } from "../models/User.js";
+import { reverseGeocode } from "../services/geocode.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -93,12 +94,15 @@ router.post(
       return res.status(401).json({ message: "Google account could not be verified" });
     }
 
-    const location = data.location
-      ? {
-          ...data.location,
-          capturedAt: new Date()
-        }
-      : undefined;
+    let lastLoginLocation: Record<string, unknown> | undefined;
+    if (data.location) {
+      const geocoded = await reverseGeocode(data.location.latitude, data.location.longitude);
+      lastLoginLocation = {
+        ...data.location,
+        ...geocoded,
+        capturedAt: new Date()
+      };
+    }
 
     const user = await User.findOneAndUpdate(
       { email: payload.email.toLowerCase() },
@@ -108,7 +112,7 @@ router.post(
           googleId: payload.sub,
           name: payload.name || "",
           picture: payload.picture || "",
-          ...(location ? { lastLoginLocation: location } : {})
+          ...(lastLoginLocation ? { lastLoginLocation } : {})
         },
         $setOnInsert: { passwordHash: "" }
       },
@@ -132,29 +136,7 @@ router.patch(
       return res.status(400).json({ message: "Location is required" });
     }
 
-    // Try to reverse geocode the location
-    let geocoded: { city?: string; locality?: string; state?: string } = {};
-    try {
-      const geoResponse = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.latitude}&lon=${location.longitude}`,
-        {
-          headers: { "Accept": "application/json" }
-        }
-      );
-
-      if (geoResponse.ok) {
-        const geoData = await geoResponse.json();
-        const address = geoData.address || {};
-        geocoded = {
-          city: address.city || address.town || address.village || address.county,
-          locality: address.suburb || address.neighbourhood,
-          state: address.state || address.province
-        };
-      }
-    } catch (error) {
-      // Silently fail geocoding, location coordinates will still be stored
-      console.error("Geocoding error:", error);
-    }
+    const geocoded = await reverseGeocode(location.latitude, location.longitude);
 
     const user = await User.findByIdAndUpdate(
       req.user?.id,

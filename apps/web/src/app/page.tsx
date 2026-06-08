@@ -69,6 +69,8 @@ export default function Home() {
       return;
     }
 
+    const locationPromise = getBrowserLocation();
+
     try {
       const response = await apiFetch<{ token: string }>(`/api/auth/${mode}`, {
         method: "POST",
@@ -76,7 +78,7 @@ export default function Home() {
       });
       setToken(response.token);
 
-      const location = await getBrowserLocation();
+      const location = await locationPromise;
       if (location) {
         await apiFetch("/api/auth/location", {
           method: "PATCH",
@@ -101,8 +103,10 @@ export default function Home() {
         setLoading(true);
         setError("");
 
+        const locationPromise = getBrowserLocation();
+
         try {
-          const location = await getBrowserLocation();
+          const location = await locationPromise;
           const result = await apiFetch<{ token: string }>("/api/auth/google", {
             method: "POST",
             body: JSON.stringify({ credential: response.credential, location })
