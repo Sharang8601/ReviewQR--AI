@@ -12,74 +12,92 @@ export type GenerateReviewResult =
   | { success: true; review: string }
   | { success: false; message: string };
 
-const client = process.env.OPENROUTER_API_KEY ? new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-}) : null;
+const apiKey = process.env.OPENROUTER_API_KEY;
 
-export async function generateProfessionalReview(input: ReviewInput): Promise<GenerateReviewResult> {
-  if (!client || !process.env.OPENROUTER_API_KEY) {
-    console.error("OpenRouter Error", "OpenRouter API key missing");
-    return { success: false, message: "OpenRouter API key missing" };
+const client = apiKey
+  ? new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey,
+    })
+  : null;
+
+export async function generateProfessionalReview(
+  input: ReviewInput
+): Promise<GenerateReviewResult> {
+  if (!client) {
+    return {
+      success: false,
+      message: "OpenRouter API key missing",
+    };
   }
 
-  const language = input.language || "English";
+  const MODELS = [
+    "google/gemma-4-26b-a4b-it:free",
+    "qwen/qwen3-30b-a3b:free",
+    "meta-llama/llama-3.1-8b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+  ];
 
-  console.log("OpenRouter Request", {
-    businessName: input.businessName,
-    category: input.category,
-    rating: input.rating,
-    language
-  });
+  for (const model of MODELS) {
+    try {
+      console.log(`Trying model: ${model}`);
 
-  try {
-    const completion = await client.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || "google/gemma-4-26b-a4b-it:free",
-
-      messages: [
-        {
-          role: "system",
-          content: `
+      const completion = await client.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: "system",
+            content: `
 You are a professional Google Review writer.
 
-Convert customer feedback into a natural Google review.
-
 Rules:
-- Sound human.
-- Do not sound AI generated.
-- Keep review between 40-120 words.
+- Generate EXACTLY ONE Google review.
+- Return ONLY the review text.
+- No explanations.
+- No multiple options.
+- No headings.
+- Do not mention that feedback is brief.
+- Length 30-100 words.
 - Match the rating.
-- Use ${language}.
-`,
-        },
-        {
-          role: "user",
-          content: `
+- Sound natural and human.
+            `,
+          },
+          {
+            role: "user",
+            content: `
 Business: ${input.businessName}
 Category: ${input.category}
 Rating: ${input.rating}
+Language: ${input.language || "English"}
 
 Customer Feedback:
 ${input.feedback}
-`,
-        },
-      ],
-    });
+            `,
+          },
+        ],
+      });
 
-    const review = completion.choices[0]?.message?.content?.trim();
-    console.log("OpenRouter Response", review);
+      const review =
+        completion.choices?.[0]?.message?.content?.trim();
 
-    if (!review) {
-      console.error("OpenRouter Error", "Empty response from OpenRouter");
-      return { success: false, message: "Unable to generate AI suggestion" };
+      if (review) {
+        console.log(`Success using ${model}`);
+
+        return {
+          success: true,
+          review,
+        };
+      }
+    } catch (err: any) {
+      console.log(
+        `Model ${model} failed:`,
+        err?.error?.message || err?.message
+      );
     }
-
-    return { success: true, review };
-  } catch (error) {
-    console.error("OpenRouter Error", error);
-    // Fallback to a generic review if AI fails
-    const fallbackReview = "Amazing service and a wonderful experience. The staff was friendly and professional. Highly recommended.";
-    console.log("Using fallback review");
-    return { success: true, review: fallbackReview };
   }
+
+  return {
+    success: false,
+    message: "All AI providers failed",
+  };
 }

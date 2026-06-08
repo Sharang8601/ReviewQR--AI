@@ -19,12 +19,27 @@ type SpeechRecognitionConstructor = new () => {
   onend: (() => void) | null;
 };
 
+const TONE_OPTIONS = [
+  { value: "Friendly", label: "😊 Friendly" },
+  { value: "Professional", label: "👔 Professional" },
+  { value: "Casual", label: "😎 Casual" },
+  { value: "Enthusiastic", label: "🔥 Enthusiastic" },
+  { value: "Luxury", label: "💎 Luxury" },
+  { value: "Formal", label: "📋 Formal" },
+];
+
+const OPTION_LABELS = ["Friendly", "Professional", "Enthusiastic", "Short & Simple"];
+
 export default function CustomerReviewPage() {
   const { businessId } = useParams<{ businessId: string }>();
   const { showToast } = useToast();
   const [business, setBusiness] = useState<Business | null>(null);
   const [rating, setRating] = useState(5);
   const [feedback, setFeedback] = useState("");
+  const [tone, setTone] = useState("Friendly");
+  const [selectedReview, setSelectedReview] = useState(""); // editable review text
+  const [reviewOptions, setReviewOptions] = useState<string[]>([]); // 4 AI options
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [review, setReview] = useState<Review | null>(null);
   const [googleReviewLink, setGoogleReviewLink] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,6 +47,9 @@ export default function CustomerReviewPage() {
   const [listening, setListening] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+
+  // Store generated state across renders (persistence)
+  const hasGeneratedReview = reviewOptions.length > 0;
 
   useEffect(() => {
     setLoadingBusiness(true);
@@ -52,20 +70,48 @@ export default function CustomerReviewPage() {
     setCopied(false);
 
     try {
-      const response = await apiFetch<{ review: Review; googleReviewLink: string }>("/api/reviews/generate", {
+      const response = await apiFetch<{ review: Review; reviewOptions: string[]; googleReviewLink: string }>("/api/reviews/generate", {
         method: "POST",
-        body: JSON.stringify({ businessId, rating, customerFeedback: feedback, language: "English" })
+        body: JSON.stringify({
+          businessId,
+          rating,
+          customerFeedback: feedback,
+          tone,
+          language: "English"
+        })
       });
+
+      // Set the 4 review options
+      const options = response.reviewOptions || [response.review.aiGeneratedReview];
+      setReviewOptions(options);
+      setSelectedReview(options[0]);
+      setSelectedOptionIndex(0);
       setReview(response.review);
       setGoogleReviewLink(response.googleReviewLink);
-      showToast("Your AI review suggestion is ready!", "success");
+      showToast("Your AI review suggestions are ready!", "success");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not generate review";
+      const message = err instanceof Error ? err.message : "AI is currently busy. Please try again in a few seconds.";
       setError(message);
       showToast(message, "error");
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSelectOption(index: number, reviewText: string) {
+    setSelectedOptionIndex(index);
+    setSelectedReview(reviewText);
+    setCopied(false);
+  }
+
+  function handleReviewTextChange(text: string) {
+    setSelectedReview(text);
+    setCopied(false);
+  }
+
+  function handleClear() {
+    setSelectedReview("");
+    setCopied(false);
   }
 
   function startVoiceInput() {
@@ -94,8 +140,8 @@ export default function CustomerReviewPage() {
   }
 
   async function copyReview() {
-    if (!review) return;
-    await navigator.clipboard.writeText(review.aiGeneratedReview);
+    if (!selectedReview.trim()) return;
+    await navigator.clipboard.writeText(selectedReview);
     setCopied(true);
     showToast("Review copied to clipboard", "success");
   }
@@ -104,8 +150,15 @@ export default function CustomerReviewPage() {
     if (review) {
       await apiFetch(`/api/reviews/${review._id}/posted`, { method: "PATCH" }).catch(() => null);
     }
+    // Review text persists in textarea - DO NOT clear it
     window.open(googleReviewLink || business?.googleReviewLink, "_blank", "noopener,noreferrer");
   }
+
+  // Build review options with labels for the card
+  const reviewOptionsWithLabels = reviewOptions.map((text, index) => ({
+    label: OPTION_LABELS[index] || `Option ${index + 1}`,
+    review: text
+  }));
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-emerald-50 to-slate-50">
@@ -134,7 +187,7 @@ export default function CustomerReviewPage() {
             </GlassCard>
 
             <div className="flex h-full flex-col">
-              {!review ? (
+              {!hasGeneratedReview ? (
                 <GlassCard className="flex h-full flex-col bg-white/80 p-6 shadow-glass sm:p-8">
                   <form onSubmit={generate} className="flex h-full flex-col">
                     <div>
@@ -142,6 +195,7 @@ export default function CustomerReviewPage() {
                       <p className="mb-6 text-sm text-slate-600">Rate your experience and share quick feedback.</p>
                     </div>
 
+                    {/* Rating */}
                     <div className="mb-6">
                       <p className="mb-3 text-sm font-semibold text-slate-700">Rating</p>
                       <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -162,8 +216,30 @@ export default function CustomerReviewPage() {
                       </div>
                     </div>
 
+                    {/* Tone Selector - Feature 4 */}
+                    <div className="mb-6">
+                      <p className="mb-3 text-sm font-semibold text-slate-700">Review Tone</p>
+                      <div className="flex flex-wrap gap-2">
+                        {TONE_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setTone(option.value)}
+                            className={`rounded-xl border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                              tone === option.value
+                                ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-sm"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Feedback Textarea */}
                     <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="feedback">
-                      Feedback
+                      Your Feedback
                     </label>
                     <textarea
                       id="feedback"
@@ -174,6 +250,7 @@ export default function CustomerReviewPage() {
                       required
                     />
 
+                    {/* Voice Input */}
                     <div className="mb-5 flex flex-wrap gap-3">
                       <Button type="button" variant="secondary" onClick={startVoiceInput} disabled={loading}>
                         <Mic size={17} />
@@ -181,6 +258,7 @@ export default function CustomerReviewPage() {
                       </Button>
                     </div>
 
+                    {/* Error */}
                     {error ? (
                       <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                         <p>{error}</p>
@@ -195,21 +273,28 @@ export default function CustomerReviewPage() {
                       </div>
                     ) : null}
 
+                    {/* Generate Button */}
                     <div className="mt-auto pt-2">
                       <Button type="submit" disabled={loading || !feedback.trim()} className="w-full sm:w-auto">
                         {loading ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
-                        {loading ? "Generating..." : "Generate Review"}
+                        {loading ? "Generating review..." : "Generate Review"}
                       </Button>
                     </div>
                   </form>
                 </GlassCard>
               ) : (
                 <ReviewCard
-                  reviewText={review.aiGeneratedReview}
+                  reviewText={selectedReview}
+                  onReviewTextChange={handleReviewTextChange}
+                  reviewOptions={reviewOptionsWithLabels}
+                  selectedOptionIndex={selectedOptionIndex}
+                  onSelectOption={handleSelectOption}
                   copied={copied}
                   onCopy={copyReview}
                   onRegenerate={() => generate()}
+                  onClear={handleClear}
                   onOpenGoogle={openGoogle}
+                  hasGoogleReviewLink={!!(googleReviewLink || business?.googleReviewLink)}
                   regenerating={loading}
                   className="h-full"
                 />
