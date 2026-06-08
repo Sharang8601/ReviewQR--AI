@@ -22,7 +22,7 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-3. Start MongoDB and fill in the API keys you want to use.
+3. Start MongoDB and add your free Gemini API key to `apps/api/.env` (get one at https://aistudio.google.com/apikey).
 
 4. Run both apps:
 
@@ -41,7 +41,7 @@ Backend: `http://localhost:5000`
 2. Business creates a profile and enters the Google review link.
 3. Backend generates a QR code pointing to `/review/:businessId`.
 4. Customer scans QR, rates, types or dictates feedback.
-5. OpenAI generates a professional review.
+5. Google Gemini generates a professional review.
 6. Customer copies the review and opens the Google review page.
 
 ## Deployment

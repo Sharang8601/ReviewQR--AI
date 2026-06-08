@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { Business } from "../models/Business.js";
 import { Review } from "../models/Review.js";
-import { generateProfessionalReview } from "../services/openai.js";
+import { generateProfessionalReview } from "../services/gemini.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -33,7 +33,7 @@ router.post(
     });
 
     if (!aiResult.success) {
-      const status = aiResult.message === "OpenAI API key missing" ? 503 : 502;
+      const status = aiResult.message === "Gemini API key missing" ? 503 : 502;
       return res.status(status).json({ success: false, message: aiResult.message });
     }
 
