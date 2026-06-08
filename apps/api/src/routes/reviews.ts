@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { Business } from "../models/Business.js";
 import { Review } from "../models/Review.js";
-import { generateProfessionalReview } from "../services/gemini.js";
+import { generateProfessionalReview } from "../services/openrouter.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -33,8 +33,10 @@ router.post(
     });
 
     if (!aiResult.success) {
-      const status = aiResult.message === "Gemini API key missing" ? 503 : 502;
-      return res.status(status).json({ success: false, message: aiResult.message });
+      return res.status(500).json({
+        success: false,
+        message: aiResult.message || "AI review generation temporarily unavailable",
+      });
     }
 
     const review = await Review.create({
