@@ -1,10 +1,14 @@
 "use client";
 
-import { Check, Copy, ExternalLink, Mic, Sparkles, Star } from "lucide-react";
-import Image from "next/image";
+import { Loader2, Mic, RefreshCw, Sparkles, Star } from "lucide-react";
 import { useParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { BusinessProfileCard } from "../../../components/BusinessProfileCard";
 import { Button } from "../../../components/Button";
+import { GlassCard } from "../../../components/GlassCard";
+import { Logo } from "../../../components/Logo";
+import { ReviewCard } from "../../../components/ReviewCard";
+import { useToast } from "../../../components/Toast";
 import { apiFetch, Business, Review } from "../../../lib/api";
 
 type SpeechRecognitionConstructor = new () => {
@@ -17,26 +21,35 @@ type SpeechRecognitionConstructor = new () => {
 
 export default function CustomerReviewPage() {
   const { businessId } = useParams<{ businessId: string }>();
+  const { showToast } = useToast();
   const [business, setBusiness] = useState<Business | null>(null);
   const [rating, setRating] = useState(5);
   const [feedback, setFeedback] = useState("");
   const [review, setReview] = useState<Review | null>(null);
   const [googleReviewLink, setGoogleReviewLink] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingBusiness, setLoadingBusiness] = useState(true);
   const [listening, setListening] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setLoadingBusiness(true);
     apiFetch<{ business: Business }>(`/api/business/public/${businessId}`)
       .then((response) => setBusiness(response.business))
-      .catch((err) => setError(err instanceof Error ? err.message : "Business not found"));
-  }, [businessId]);
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "Business not found";
+        setError(message);
+        showToast(message, "error");
+      })
+      .finally(() => setLoadingBusiness(false));
+  }, [businessId, showToast]);
 
-  async function generate(event: FormEvent) {
-    event.preventDefault();
+  async function generate(event?: FormEvent) {
+    event?.preventDefault();
     setLoading(true);
     setError("");
+    setCopied(false);
 
     try {
       const response = await apiFetch<{ review: Review; googleReviewLink: string }>("/api/reviews/generate", {
@@ -45,8 +58,11 @@ export default function CustomerReviewPage() {
       });
       setReview(response.review);
       setGoogleReviewLink(response.googleReviewLink);
+      showToast("Your AI review suggestion is ready!", "success");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not generate review");
+      const message = err instanceof Error ? err.message : "Could not generate review";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
@@ -60,7 +76,9 @@ export default function CustomerReviewPage() {
         .webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setError("Voice input is not supported in this browser.");
+      const message = "Voice input is not supported in this browser.";
+      setError(message);
+      showToast(message, "error");
       return;
     }
 
@@ -79,6 +97,7 @@ export default function CustomerReviewPage() {
     if (!review) return;
     await navigator.clipboard.writeText(review.aiGeneratedReview);
     setCopied(true);
+    showToast("Review copied to clipboard", "success");
   }
 
   async function openGoogle() {
@@ -89,89 +108,116 @@ export default function CustomerReviewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-mist">
-      <section className="mx-auto grid min-h-screen max-w-6xl gap-6 px-5 py-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
-        <aside className="rounded-lg bg-ink p-6 text-white shadow-soft">
-          {business?.logo ? (
-            <Image src={business.logo} alt={business.businessName} width={72} height={72} className="mb-5 h-16 w-16 rounded-md object-cover" />
-          ) : (
-            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-md bg-gold text-ink">
-              <Sparkles size={30} />
+    <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-emerald-50 to-slate-50">
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute top-0 right-0 h-96 w-96 rounded-full bg-emerald-200 opacity-10 mix-blend-multiply blur-3xl filter" />
+        <div className="absolute bottom-0 left-1/2 h-96 w-96 rounded-full bg-emerald-300 opacity-10 mix-blend-multiply blur-3xl filter" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <header className="mb-6 sm:mb-8">
+          <Logo size="md" href="/" subtitle="AI-powered review collection" />
+        </header>
+
+        {loadingBusiness ? (
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
+          </div>
+        ) : (
+          <section className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+            <GlassCard className="flex h-full flex-col bg-white/70 p-6 shadow-glass sm:p-8">
+              {business ? (
+                <BusinessProfileCard business={business} />
+              ) : (
+                <p className="text-slate-600">{error || "Business not found."}</p>
+              )}
+            </GlassCard>
+
+            <div className="flex h-full flex-col">
+              {!review ? (
+                <GlassCard className="flex h-full flex-col bg-white/80 p-6 shadow-glass sm:p-8">
+                  <form onSubmit={generate} className="flex h-full flex-col">
+                    <div>
+                      <h2 className="mb-1 text-2xl font-bold text-slate-950">Create Your Review</h2>
+                      <p className="mb-6 text-sm text-slate-600">Rate your experience and share quick feedback.</p>
+                    </div>
+
+                    <div className="mb-6">
+                      <p className="mb-3 text-sm font-semibold text-slate-700">Rating</p>
+                      <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setRating(value)}
+                            className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white transition hover:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:h-14 sm:w-14"
+                            aria-label={`${value} stars`}
+                          >
+                            <Star
+                              size={24}
+                              className={value <= rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <label className="mb-2 block text-sm font-semibold text-slate-700" htmlFor="feedback">
+                      Feedback
+                    </label>
+                    <textarea
+                      id="feedback"
+                      value={feedback}
+                      onChange={(event) => setFeedback(event.target.value)}
+                      className="mb-4 min-h-36 w-full flex-1 resize-y rounded-xl border border-slate-200 bg-white p-4 leading-6 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Very good service, friendly staff, fast delivery..."
+                      required
+                    />
+
+                    <div className="mb-5 flex flex-wrap gap-3">
+                      <Button type="button" variant="secondary" onClick={startVoiceInput} disabled={loading}>
+                        <Mic size={17} />
+                        {listening ? "Listening..." : "Voice Input"}
+                      </Button>
+                    </div>
+
+                    {error ? (
+                      <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        <p>{error}</p>
+                        <button
+                          type="button"
+                          onClick={() => generate()}
+                          className="mt-2 inline-flex items-center gap-1 font-semibold text-red-700 underline-offset-2 hover:underline"
+                        >
+                          <RefreshCw size={14} />
+                          Retry
+                        </button>
+                      </div>
+                    ) : null}
+
+                    <div className="mt-auto pt-2">
+                      <Button type="submit" disabled={loading || !feedback.trim()} className="w-full sm:w-auto">
+                        {loading ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
+                        {loading ? "Generating..." : "Generate Review"}
+                      </Button>
+                    </div>
+                  </form>
+                </GlassCard>
+              ) : (
+                <ReviewCard
+                  reviewText={review.aiGeneratedReview}
+                  copied={copied}
+                  onCopy={copyReview}
+                  onRegenerate={() => generate()}
+                  onOpenGoogle={openGoogle}
+                  regenerating={loading}
+                  className="h-full"
+                />
+              )}
             </div>
-          )}
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-gold">{business?.category || "Review"}</p>
-          <h1 className="text-4xl font-bold leading-tight">{business?.businessName || "Boost The Reviews"}</h1>
-          <p className="mt-5 text-white/76">
-            Share your real experience. We will turn your feedback into a clear review you can copy to Google.
-          </p>
-        </aside>
-
-        <section className="rounded-lg bg-white p-5 shadow-soft sm:p-7">
-          {!review ? (
-            <form onSubmit={generate}>
-              <h2 className="mb-5 text-xl font-bold">Create Your Review</h2>
-              <div className="mb-5">
-                <p className="mb-3 text-sm font-semibold">Rating</p>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setRating(value)}
-                      className="focus-ring flex h-11 w-11 items-center justify-center rounded-md border border-[#d9e2dd]"
-                      aria-label={`${value} stars`}
-                    >
-                      <Star size={22} className={value <= rating ? "fill-gold text-gold" : "text-ink/25"} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <label className="mb-2 block text-sm font-semibold" htmlFor="feedback">
-                Feedback
-              </label>
-              <textarea
-                id="feedback"
-                value={feedback}
-                onChange={(event) => setFeedback(event.target.value)}
-                className="focus-ring mb-3 min-h-36 w-full resize-y rounded-md border border-[#d9e2dd] p-3 leading-6"
-                placeholder="Very good service, friendly staff, fast delivery..."
-                required
-              />
-
-              <div className="mb-5 flex flex-wrap gap-3">
-                <Button type="button" variant="secondary" onClick={startVoiceInput}>
-                  <Mic size={17} />
-                  {listening ? "Listening" : "Voice Input"}
-                </Button>
-              </div>
-
-              {error ? <p className="mb-4 rounded-md bg-[#fff0ed] px-3 py-2 text-sm text-[#9d321f]">{error}</p> : null}
-
-              <Button type="submit" disabled={loading || !feedback.trim()}>
-                <Sparkles size={17} />
-                {loading ? "Generating" : "Generate Review"}
-              </Button>
-            </form>
-          ) : (
-            <div>
-              <h2 className="mb-4 text-xl font-bold">Your Google Review</h2>
-              <div className="mb-5 rounded-md border border-[#d9e2dd] bg-mist p-4 text-lg leading-8">{review.aiGeneratedReview}</div>
-              <div className="flex flex-wrap gap-3">
-                <Button type="button" variant="secondary" onClick={copyReview}>
-                  {copied ? <Check size={17} /> : <Copy size={17} />}
-                  {copied ? "Copied" : "Copy Review"}
-                </Button>
-                <Button type="button" onClick={openGoogle}>
-                  <ExternalLink size={17} />
-                  Open Google
-                </Button>
-              </div>
-            </div>
-          )}
-        </section>
-      </section>
+          </section>
+        )}
+      </div>
     </main>
   );
 }
-

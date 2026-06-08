@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearToken } from "../lib/api";
+import { Logo } from "./Logo";
 
 const menuItems = [
   { icon: BarChart3, label: "Dashboard", href: "/dashboard" },
@@ -48,6 +49,9 @@ export function Sidebar({ isMobile = false, isOpen = true, onClose }: SidebarPro
 
   const sidebarContent = (
     <>
+      <div className="border-b border-slate-200 px-4 py-5">
+        <Logo size="md" href="/dashboard" subtitle="Business dashboard" />
+      </div>
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
         {menuItems.map((item) => (
           <div key={item.href} className="relative">
@@ -129,22 +133,16 @@ export function Sidebar({ isMobile = false, isOpen = true, onClose }: SidebarPro
 
 export function DashboardHeader({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <div className="lg:hidden flex items-center justify-between px-5 py-4 bg-white border-b border-slate-200">
+    <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
       <button
         onClick={onMenuClick}
-        className="p-2 hover:bg-slate-100 rounded-lg transition"
+        className="rounded-lg p-2 transition hover:bg-slate-100"
+        aria-label="Open menu"
       >
         <Menu size={24} />
       </button>
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white">
-          <QrCode size={22} />
-        </div>
-        <div>
-          <p className="text-xs text-slate-500">Business Dashboard</p>
-          <h1 className="text-lg font-bold text-slate-950">ReviewQR AI</h1>
-        </div>
-      </div>
+      <Logo size="sm" showText subtitle="Business dashboard" />
+      <div className="w-10" aria-hidden />
     </div>
   );
 }

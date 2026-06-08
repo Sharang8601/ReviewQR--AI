@@ -1,22 +1,14 @@
 import QRCode from "qrcode";
 import { Router } from "express";
-import { z } from "zod";
 import { env } from "../config/env.js";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
 import { Business } from "../models/Business.js";
 import { Review } from "../models/Review.js";
 import { User } from "../models/User.js";
+import { businessProfileSchema, publicBusinessFields } from "../schemas/businessProfile.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
-
-const profileSchema = z.object({
-  businessName: z.string().min(2),
-  category: z.string().min(2),
-  logo: z.string().optional().default(""),
-  googleReviewLink: z.string().url(),
-  subscriptionPlan: z.string().optional().default("free")
-});
 
 router.get(
   "/me",
@@ -32,7 +24,7 @@ router.post(
   "/profile",
   requireAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
-    const data = profileSchema.parse(req.body);
+    const data = businessProfileSchema.parse(req.body);
     const existing = await Business.findOne({ ownerId: req.user?.id });
 
     const business =
@@ -58,9 +50,7 @@ router.post(
 router.get(
   "/public/:businessId",
   asyncHandler(async (req, res) => {
-    const business = await Business.findById(req.params.businessId).select(
-      "businessName category logo googleReviewLink subscriptionPlan"
-    );
+    const business = await Business.findById(req.params.businessId).select(publicBusinessFields);
 
     if (!business) {
       return res.status(404).json({ message: "Business not found" });

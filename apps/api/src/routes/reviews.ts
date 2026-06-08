@@ -21,10 +21,10 @@ router.post(
     const business = await Business.findById(data.businessId);
 
     if (!business) {
-      return res.status(404).json({ message: "Business not found" });
+      return res.status(404).json({ success: false, message: "Business not found" });
     }
 
-    const aiGeneratedReview = await generateProfessionalReview({
+    const aiResult = await generateProfessionalReview({
       businessName: business.businessName,
       category: business.category,
       rating: data.rating,
@@ -32,15 +32,24 @@ router.post(
       language: data.language
     });
 
+    if (!aiResult.success) {
+      const status = aiResult.message === "OpenAI API key missing" ? 503 : 502;
+      return res.status(status).json({ success: false, message: aiResult.message });
+    }
+
     const review = await Review.create({
       businessId: business._id,
       rating: data.rating,
       customerFeedback: data.customerFeedback,
-      aiGeneratedReview,
+      aiGeneratedReview: aiResult.review,
       language: data.language
     });
 
-    return res.status(201).json({ review, googleReviewLink: business.googleReviewLink });
+    return res.status(201).json({
+      success: true,
+      review,
+      googleReviewLink: business.googleReviewLink
+    });
   })
 );
 
@@ -50,12 +59,11 @@ router.patch(
     const review = await Review.findByIdAndUpdate(req.params.reviewId, { postedToGoogle: true }, { new: true });
 
     if (!review) {
-      return res.status(404).json({ message: "Review not found" });
+      return res.status(404).json({ success: false, message: "Review not found" });
     }
 
-    return res.json({ review });
+    return res.json({ success: true, review });
   })
 );
 
 export default router;
-

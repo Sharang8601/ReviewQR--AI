@@ -5,6 +5,7 @@ import { ArrowRight, BarChart3, Check, Eye, EyeOff, Gauge, QrCode, ShieldCheck, 
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Logo } from "../components/Logo";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -163,11 +164,8 @@ export default function Home() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(16,185,129,0.36),transparent_34%),radial-gradient(circle_at_82%_24%,rgba(34,197,94,0.2),transparent_30%),linear-gradient(135deg,#0f172a_0%,#111827_42%,#052e2b_100%)]" />
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(to_top,rgba(16,185,129,0.16),transparent)]" />
 
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-400 text-slate-950 shadow-xl shadow-emerald-400/20">
-              <QrCode size={24} />
-            </div>
-            <span className="text-xl font-bold tracking-tight">ReviewQR AI</span>
+          <div className="relative z-10">
+            <Logo size="lg" inverted />
           </div>
 
           <div className="relative z-10 max-w-2xl py-8 xl:py-12">
@@ -248,10 +246,7 @@ export default function Home() {
             className="relative z-10 w-full max-w-md"
           >
             <div className="mb-6 text-center lg:hidden">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-emerald-300 shadow-xl shadow-slate-950/15">
-                <QrCode size={25} />
-              </div>
-              <p className="text-sm font-bold text-emerald-700">ReviewQR AI</p>
+              <Logo size="md" centered className="mb-4 justify-center" />
               <h1 className="mt-2 text-3xl font-bold leading-tight tracking-normal text-slate-950">Get More Google Reviews with AI</h1>
             </div>
 

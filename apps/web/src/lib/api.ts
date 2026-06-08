@@ -8,6 +8,31 @@ export type Business = {
   googleReviewLink: string;
   qrCode?: string;
   subscriptionPlan?: string;
+  businessDescription?: string;
+  tagline?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  googleMapsUrl?: string;
+  workingHours?: string;
+  foundedYear?: number | null;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  twitterUrl?: string;
+  linkedinUrl?: string;
+  youtubeUrl?: string;
+  tiktokUrl?: string;
+  whatsappNumber?: string;
+  telegramUrl?: string;
+  yearsInBusiness?: number | null;
+  customersServed?: string;
+  awardsCertifications?: string;
+  trustStatement?: string;
+  showDescription?: boolean;
+  showSocialLinks?: boolean;
+  showContactInfo?: boolean;
+  showTrustInfo?: boolean;
 };
 
 export type Review = {
@@ -83,6 +108,11 @@ export function clearToken() {
   window.localStorage.removeItem("btr_token");
 }
 
+type ApiPayload = {
+  success?: boolean;
+  message?: string;
+};
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}) {
   const token = getToken();
   const response = await fetch(`${API_URL}${path}`, {
@@ -94,9 +124,9 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}) {
     }
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = (await response.json().catch(() => ({}))) as T & ApiPayload;
 
-  if (!response.ok) {
+  if (!response.ok || payload.success === false) {
     throw new Error(payload.message || "Request failed");
   }
 

@@ -9,43 +9,63 @@ type ReviewInput = {
   language?: string;
 };
 
+export type GenerateReviewResult =
+  | { success: true; review: string }
+  | { success: false; message: string };
+
 const client = env.openAiApiKey ? new OpenAI({ apiKey: env.openAiApiKey }) : null;
 
-export async function generateProfessionalReview(input: ReviewInput) {
-  if (!client) {
-    return fallbackReview(input);
+export async function generateProfessionalReview(input: ReviewInput): Promise<GenerateReviewResult> {
+  if (!client || !env.openAiApiKey) {
+    console.error("OpenAI Error", "OpenAI API key missing");
+    return { success: false, message: "OpenAI API key missing" };
   }
 
   const language = input.language || "English";
-  const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "Write honest, natural Google review text. Keep it concise, specific, professional, and never invent details beyond the customer feedback."
-      },
-      {
-        role: "user",
-        content: [
-          `Business: ${input.businessName}`,
-          `Category: ${input.category}`,
-          `Rating: ${input.rating}/5`,
-          `Customer feedback: ${input.feedback}`,
-          `Output language: ${language}`,
-          "Return only the review text."
-        ].join("\n")
-      }
-    ],
-    temperature: 0.7,
-    max_tokens: 160
+
+  console.log("OpenAI Request", {
+    businessName: input.businessName,
+    category: input.category,
+    rating: input.rating,
+    language
   });
 
-  return response.choices[0]?.message?.content?.trim() || fallbackReview(input);
-}
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Write honest, natural Google review text. Keep it concise, specific, professional, and never invent details beyond the customer feedback."
+        },
+        {
+          role: "user",
+          content: [
+            `Business: ${input.businessName}`,
+            `Category: ${input.category}`,
+            `Rating: ${input.rating}/5`,
+            `Customer feedback: ${input.feedback}`,
+            `Output language: ${language}`,
+            "Return only the review text."
+          ].join("\n")
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 160
+    });
 
-function fallbackReview(input: ReviewInput) {
-  const sentiment = input.rating >= 4 ? "had a great experience" : "appreciated the service";
-  return `I ${sentiment} at ${input.businessName}. ${input.feedback.trim()} I would recommend them to anyone looking for a reliable ${input.category.toLowerCase()} option.`;
-}
+    const review = response.choices[0]?.message?.content?.trim();
+    console.log("OpenAI Response", review);
 
+    if (!review) {
+      console.error("OpenAI Error", "Empty response from OpenAI");
+      return { success: false, message: "Unable to generate AI suggestion" };
+    }
+
+    return { success: true, review };
+  } catch (error) {
+    console.error("OpenAI Error", error);
+    return { success: false, message: "Unable to generate AI suggestion" };
+  }
+}

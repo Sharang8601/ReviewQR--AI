@@ -7,14 +7,14 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({ children, variant = "primary", className = "", ...props }: Props) {
   const variants = {
-    primary: "bg-fern text-white hover:bg-[#25594c]",
-    secondary: "bg-white text-ink border border-[#d9e2dd] hover:bg-[#f9fbfa]",
-    ghost: "bg-transparent text-ink hover:bg-white/70"
+    primary: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-600/20",
+    secondary: "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50",
+    ghost: "bg-transparent text-slate-700 hover:bg-white/70"
   };
 
   return (
     <button
-      className={`focus-ring inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-55 ${variants[variant]} ${className}`}
+      className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55 ${variants[variant]} ${className}`}
       {...props}
     >
       {children}

@@ -5,7 +5,9 @@ import { BarChart3, Copy, Download, ExternalLink, QrCode, Star } from "lucide-re
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { BusinessHeader } from "../../components/BusinessHeader";
 import { GlassCard } from "../../components/GlassCard";
+import { Logo } from "../../components/Logo";
 import { Sidebar, DashboardHeader } from "../../components/Sidebar";
 import { Button } from "../../components/Button";
 import { apiFetch, Business, CurrentUser, getToken, syncUserLocation } from "../../lib/api";
@@ -113,11 +115,10 @@ export default function Dashboard() {
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
           {/* Desktop Header */}
-          <header className="hidden lg:block sticky top-0 z-20 border-b border-white/20 bg-white/30 backdrop-blur-glass">
-            <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+          <header className="sticky top-0 z-20 hidden border-b border-white/20 bg-white/30 backdrop-blur-glass lg:block">
+            <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-6">
               <div>
-                <h1 className="text-4xl font-bold text-slate-950 mb-1">ReviewQR AI</h1>
-                <p className="text-sm text-slate-600">Welcome back 👋</p>
+                <Logo size="lg" subtitle="Welcome back 👋" />
               </div>
               <div className="text-right">
                 <p className="text-sm font-semibold text-slate-950">{user?.email}</p>
@@ -134,9 +135,9 @@ export default function Dashboard() {
             className="px-5 pt-8 lg:px-8"
           >
             <div className="max-w-7xl mx-auto">
-              <GlassCard className="p-8 lg:p-12 mb-8">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+              <GlassCard className="mb-8 p-6 sm:p-8 lg:p-12">
+                <div className="flex flex-col items-start gap-6 lg:flex-row lg:justify-between">
+                  <div className="min-w-0 flex-1">
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -153,22 +154,23 @@ export default function Dashboard() {
                       ReviewQR AI helps you generate QR codes, collect customer feedback, and convert it into professional Google reviews using AI.
                     </p>
                   </div>
-                  {business?.logo && (
+                  {business ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
-                      className="hidden lg:block ml-8 flex-shrink-0"
+                      className="w-full flex-shrink-0 lg:w-auto"
                     >
-                      <Image
-                        src={business.logo}
-                        alt="Business logo"
-                        width={120}
-                        height={120}
-                        className="rounded-2xl shadow-lg"
+                      <BusinessHeader
+                        businessName={business.businessName}
+                        category={business.category}
+                        logo={business.logo}
+                        size="lg"
+                        variant="inline"
+                        className="lg:flex-col lg:items-end"
                       />
                     </motion.div>
-                  )}
+                  ) : null}
                 </div>
               </GlassCard>
             </div>

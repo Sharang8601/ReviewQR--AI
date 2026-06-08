@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#f0fdf4"/>
+  <rect x="80" y="80" width="1040" height="470" rx="40" fill="white" stroke="#d1fae5" stroke-width="2"/>
+  <rect x="140" y="160" width="100" height="100" rx="24" fill="#059669"/>
+  <rect x="162" y="182" width="22" height="22" rx="3" fill="white"/>
+  <rect x="190" y="182" width="22" height="22" rx="3" fill="white"/>
+  <rect x="162" y="210" width="22" height="22" rx="3" fill="white"/>
+  <rect x="194" y="214" width="18" height="18" rx="2" fill="#a7f3d0"/>
+  <text x="270" y="225" font-family="system-ui, sans-serif" font-size="52" font-weight="700" fill="#0f172a">ReviewQR AI</text>
+  <text x="140" y="320" font-family="system-ui, sans-serif" font-size="36" font-weight="600" fill="#334155">Get More Google Reviews with AI</text>
+  <text x="140" y="380" font-family="system-ui, sans-serif" font-size="24" fill="#64748b">QR codes � Customer feedback � AI-powered review suggestions</text>
+</svg>
